@@ -3,6 +3,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProductEntity } from './entities/product.entity';
+import { KafkaModule } from './kafka/kafka.module';
+import { KafkaConsumerService } from './kafka/consumer.service';
 
 @Module({
   imports: [
@@ -17,8 +19,9 @@ import { ProductEntity } from './entities/product.entity';
       synchronize: true,
     }),
     TypeOrmModule.forFeature([ProductEntity]),
+    KafkaModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, KafkaConsumerService],
 })
 export class AppModule {}

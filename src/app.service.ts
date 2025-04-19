@@ -4,12 +4,16 @@ import { ProductEntity } from './entities/product.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UpdateProdcutPayload } from './types/UpdateProductPayload.interface';
+import { EachMessagePayload } from 'kafkajs';
+import { KafkaConsumerService } from './kafka/consumer.service';
+import { KAFKA_TOPICS } from './kafka/topic';
 
 @Injectable()
 export class AppService {
   constructor(
     @InjectRepository(ProductEntity)
     private _productEntity: Repository<ProductEntity>,
+    private readonly kafkaConsumer: KafkaConsumerService,
   ) {}
 
   async createProduct(productData: CreateProdcutPayload) {
@@ -102,6 +106,65 @@ export class AppService {
       message: `Products fetched successfully`,
       data: products,
       total: total,
+    };
+  }
+
+  async onModuleInit() {
+    await this.kafkaConsumer.subscribeToTopic(
+      KAFKA_TOPICS.ORDER_CREATED,
+      this.consumerOrderCreatedTopic.bind(this),
+    );
+  }
+
+  // Update Product on Order Created
+  async consumerOrderCreatedTopic({
+    topic,
+    partition,
+    message,
+  }: EachMessagePayload) {
+    const value = message.value?.toString();
+    console.log(
+      `[Kafka Message] Topic: ${topic} | Partition: ${partition} | Message: ${value}`,
+    );
+
+    const updatedProductData = JSON.parse(value!);
+
+    const { productId, quantity } = updatedProductData;
+
+    // Check Product Exist using Product Code
+    const isProductExists = await this._productEntity.findOneBy({
+      id: productId,
+    });
+
+    if (!isProductExists) {
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        message: `Product not found in this marketplace`,
+      };
+    }
+
+    // Update only the fields that are provided
+    console.log(
+      `Product ID: ${productId} | Quantity: ${quantity} will be deducted. Current Available stock: ${isProductExists.available_stock} => New available stock: ${isProductExists.available_stock - quantity}`,
+    );
+    const updatedProduct = await this._productEntity.update(
+      { id: productId },
+      {
+        available_stock: isProductExists.available_stock - quantity,
+      },
+    );
+
+    if (!updatedProduct) {
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: `Failed to update product`,
+      };
+    }
+
+    return {
+      status: HttpStatus.OK,
+      message: `Product updated successfully`,
+      data: updatedProduct,
     };
   }
 }
