@@ -3,6 +3,7 @@ import { CreateProdcutPayload } from './types/CreateProductPayload.interface';
 import { ProductEntity } from './entities/product.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
+import { UpdateProdcutPayload } from './types/UpdateProductPayload.interface';
 
 @Injectable()
 export class AppService {
@@ -48,6 +49,45 @@ export class AppService {
       status: HttpStatus.CREATED,
       message: `Product created successfully`,
       data: createdProduct,
+    };
+  }
+
+  // Update Product
+  async updateProduct(updatedProductData: UpdateProdcutPayload) {
+    const { id, productName, shortDesc, itemPrice, availableStock } =
+      updatedProductData;
+
+    // Check Product Exist using Product Code
+    const isProductExists = await this._productEntity.findOneBy({
+      id: id,
+    });
+
+    if (!isProductExists) {
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        message: `Product not found in this marketplace`,
+      };
+    }
+
+    // Update only the fields that are provided
+    const updatedProduct = await this._productEntity.update(id, {
+      ...(productName && { product_name: productName }),
+      ...(shortDesc && { short_description: shortDesc }),
+      ...(itemPrice && { item_price: itemPrice }),
+      ...(availableStock && { available_stock: availableStock }),
+    });
+
+    if (!updatedProduct) {
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: `Failed to update product`,
+      };
+    }
+
+    return {
+      status: HttpStatus.OK,
+      message: `Product updated successfully`,
+      data: updatedProduct,
     };
   }
 

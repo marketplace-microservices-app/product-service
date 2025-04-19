@@ -2,6 +2,7 @@ import { Controller, Get, Post, Query } from '@nestjs/common';
 import { AppService } from './app.service';
 import { CreateProdcutPayload } from './types/CreateProductPayload.interface';
 import { MessagePattern, Payload } from '@nestjs/microservices';
+import { UpdateProdcutPayload } from './types/UpdateProductPayload.interface';
 
 @Controller('api/product')
 export class AppController {
@@ -20,5 +21,11 @@ export class AppController {
     @Query('take') take: string,
   ) {
     return this.appService.getAllProductsPaginated(Number(skip), Number(take));
+  }
+
+  @MessagePattern('product.update')
+  @Post('update')
+  update(@Payload() updatedProductData: UpdateProdcutPayload) {
+    return this.appService.updateProduct(updatedProductData);
   }
 }
