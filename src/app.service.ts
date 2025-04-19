@@ -110,10 +110,10 @@ export class AppService {
   }
 
   async onModuleInit() {
-    await this.kafkaConsumer.subscribeToTopic(
-      KAFKA_TOPICS.ORDER_CREATED,
-      this.consumerOrderCreatedTopic.bind(this),
-    );
+    await this.kafkaConsumer.subscribeToTopics({
+      'order.created': this.consumerOrderCreatedTopic.bind(this),
+      'order.cancelled': this.consumerOrderCancelledTopic.bind(this),
+    });
   }
 
   // Update Product on Order Created
@@ -151,6 +151,57 @@ export class AppService {
       { id: productId },
       {
         available_stock: isProductExists.available_stock - quantity,
+      },
+    );
+
+    if (!updatedProduct) {
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: `Failed to update product`,
+      };
+    }
+
+    return {
+      status: HttpStatus.OK,
+      message: `Product updated successfully`,
+      data: updatedProduct,
+    };
+  }
+
+  async consumerOrderCancelledTopic({
+    topic,
+    partition,
+    message,
+  }: EachMessagePayload) {
+    const value = message.value?.toString();
+    console.log(
+      `[Kafka Message] Topic: ${topic} | Partition: ${partition} | Message: ${value}`,
+    );
+
+    const updatedProductData = JSON.parse(value!);
+
+    const { productId, quantity } = updatedProductData;
+
+    // Check Product Exist using Product Code
+    const isProductExists = await this._productEntity.findOneBy({
+      id: productId,
+    });
+
+    if (!isProductExists) {
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        message: `Product not found in this marketplace`,
+      };
+    }
+
+    // Update only the fields that are provided
+    console.log(
+      `Product ID: ${productId} | Quantity: ${quantity} will be added. Current Available stock: ${isProductExists.available_stock} => New available stock: ${isProductExists.available_stock + quantity}`,
+    );
+    const updatedProduct = await this._productEntity.update(
+      { id: productId },
+      {
+        available_stock: isProductExists.available_stock + quantity,
       },
     );
 
