@@ -58,6 +58,26 @@ export class AppService {
     };
   }
 
+  async getProductDetailsByProductId(productId: string) {
+    // Check Product Exist using Product Code
+    const isProductExists = await this._productEntity.findOneBy({
+      id: productId,
+    });
+
+    if (!isProductExists) {
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        message: `Product not found in this marketplace`,
+      };
+    }
+
+    return {
+      status: HttpStatus.OK,
+      message: `Product fetched successfully`,
+      data: isProductExists,
+    };
+  }
+
   // Update Product
   async updateProduct(updatedProductData: UpdateProdcutPayload) {
     // Invalidate any cached data related to product list

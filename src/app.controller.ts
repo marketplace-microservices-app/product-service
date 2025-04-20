@@ -14,6 +14,12 @@ export class AppController {
     return this.appService.createProduct(productData);
   }
 
+  @MessagePattern('product.get-product-details-by-productId')
+  @Post('get-product-details-by-productId')
+  getProductDetailsByProductId(@Payload() productId: string) {
+    return this.appService.getProductDetailsByProductId(productId);
+  }
+
   @MessagePattern('product.get-all-paginated')
   @Get('get-all-products/paginated')
   getAllProductsPaginated(@Payload() payload: { skip: number; take: number }) {
