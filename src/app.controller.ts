@@ -16,11 +16,8 @@ export class AppController {
 
   @MessagePattern('product.get-all-paginated')
   @Get('get-all-products/paginated')
-  getAllProductsPaginated(
-    @Query('skip') skip: string,
-    @Query('take') take: string,
-  ) {
-    return this.appService.getAllProductsPaginated(Number(skip), Number(take));
+  getAllProductsPaginated(@Payload() payload: { skip: number; take: number }) {
+    return this.appService.getAllProductsPaginated(payload.skip, payload.take);
   }
 
   @MessagePattern('product.update')

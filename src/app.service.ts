@@ -7,6 +7,7 @@ import { UpdateProdcutPayload } from './types/UpdateProductPayload.interface';
 import { EachMessagePayload } from 'kafkajs';
 import { KafkaConsumerService } from './kafka/consumer.service';
 import { KAFKA_TOPICS } from './kafka/topic';
+import CacheService from './cache.service';
 
 @Injectable()
 export class AppService {
@@ -14,6 +15,7 @@ export class AppService {
     @InjectRepository(ProductEntity)
     private _productEntity: Repository<ProductEntity>,
     private readonly kafkaConsumer: KafkaConsumerService,
+    private _cacheService: CacheService,
   ) {}
 
   async createProduct(productData: CreateProdcutPayload) {
@@ -58,6 +60,13 @@ export class AppService {
 
   // Update Product
   async updateProduct(updatedProductData: UpdateProdcutPayload) {
+    // Invalidate any cached data related to product list
+    const keys = await this._cacheService.getMany();
+
+    if (keys.length > 0) {
+      await this._cacheService.delMany(keys);
+    }
+
     const { id, productName, shortDesc, itemPrice, availableStock } =
       updatedProductData;
 
@@ -127,6 +136,13 @@ export class AppService {
       `[Kafka Message] Topic: ${topic} | Partition: ${partition} | Message: ${value}`,
     );
 
+    // Invalidate any cached data related to product list
+    const keys = await this._cacheService.getMany();
+
+    if (keys.length > 0) {
+      await this._cacheService.delMany(keys);
+    }
+
     const updatedProductData = JSON.parse(value!);
 
     const { productId, quantity } = updatedProductData;
@@ -177,6 +193,13 @@ export class AppService {
     console.log(
       `[Kafka Message] Topic: ${topic} | Partition: ${partition} | Message: ${value}`,
     );
+
+    // Invalidate any cached data related to product list
+    const keys = await this._cacheService.getMany();
+
+    if (keys.length > 0) {
+      await this._cacheService.delMany(keys);
+    }
 
     const updatedProductData = JSON.parse(value!);
 
