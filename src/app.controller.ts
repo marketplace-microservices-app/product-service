@@ -31,4 +31,10 @@ export class AppController {
   update(@Payload() updatedProductData: UpdateProdcutPayload) {
     return this.appService.updateProduct(updatedProductData);
   }
+
+  @MessagePattern('product.get-all-products-by-sellerId')
+  @Post('get-all-products-by-sellerId')
+  getAllProductsBySellerId(@Payload() sellerId: string) {
+    return this.appService.getAllProductsBySellerId(sellerId);
+  }
 }

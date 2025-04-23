@@ -261,4 +261,30 @@ export class AppService {
       data: updatedProduct,
     };
   }
+
+  async getAllProductsBySellerId(sellerId: string) {
+    const products = await this._productEntity
+      .find({
+        where: { seller_id: sellerId },
+      })
+      .catch((e) => {
+        return {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          message: 'There was an error fetching products.',
+        };
+      });
+
+    if (Array.isArray(products) && products.length == 0) {
+      return {
+        status: HttpStatus.OK,
+        message: 'No Products by Seller Yet.',
+      };
+    }
+
+    return {
+      status: HttpStatus.OK,
+      message: `Fetched All the Products for ${sellerId}`,
+      products: products,
+    };
+  }
 }
