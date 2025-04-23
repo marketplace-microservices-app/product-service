@@ -278,6 +278,7 @@ export class AppService {
       return {
         status: HttpStatus.OK,
         message: 'No Products by Seller Yet.',
+        products: [],
       };
     }
 
